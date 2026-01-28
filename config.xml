@@ -12,16 +12,19 @@
     <allow-navigation href="*" />
     <allow-intent href="*" />
 
-    <icon src="www/icon-192.png" />
+    <!-- Main Default Icon -->
+    <icon src="www/icon-512.png" />
 
     <platform name="android">
+        <!-- Specific density mappings -->
+        <icon src="www/icon-192.png" density="xxxhdpi" />
+        <icon src="www/icon-512.png" density="xxxhdpi" /> <!-- High res devices -->
+        
         <preference name="AndroidXEnabled" value="true" />
         
-        <!-- These settings bypass security for the iframe -->
         <preference name="AndroidInsecureFileModeEnabled" value="true" />
         <preference name="MixedContentMode" value="0" /> 
 
-        <!-- CORRECTED: This merges the attribute into the existing application tag -->
         <edit-config file="app/src/main/AndroidManifest.xml" target="/manifest/application" mode="merge">
             <application android:usesCleartextTraffic="true" />
         </edit-config>
