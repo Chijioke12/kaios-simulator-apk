@@ -8,25 +8,22 @@
     <author email="dev@example.com">Chijioke</author>
     <content src="index.html" />
     
-    <!-- Security Overrides: This allows the iframe to load anything -->
     <access origin="*" />
     <allow-navigation href="*" />
     <allow-intent href="*" />
 
-    <!-- Icons -->
     <icon src="www/icon-192.png" />
+
     <platform name="android">
-        <icon src="www/icon-192.png" density="mdpi" />
-        <icon src="www/icon-512.png" density="xxxhdpi" />
-        
         <preference name="AndroidXEnabled" value="true" />
         
-        <!-- Bypasses CORS and Frame Blocking -->
+        <!-- These settings bypass security for the iframe -->
         <preference name="AndroidInsecureFileModeEnabled" value="true" />
-        <preference name="MixedContentMode" value="0" /> <!-- 0 = Always Allow -->
+        <preference name="MixedContentMode" value="0" /> 
 
-        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+        <!-- CORRECTED: This merges the attribute into the existing application tag -->
+        <edit-config file="app/src/main/AndroidManifest.xml" target="/manifest/application" mode="merge">
             <application android:usesCleartextTraffic="true" />
-        </config-file>
+        </edit-config>
     </platform>
 </widget>
