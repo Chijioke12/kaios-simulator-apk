@@ -1,0 +1,13 @@
+{
+  "name": "com.chijioke.kaiosim",
+  "displayName": "KaiOSSim",
+  "version": "1.0.0",
+  "description": "Simulator",
+  "main": "index.js",
+  "keywords": ["ecosystem:cordova"],
+  "author": "Chijioke",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "cordova-android": "^13.0.0"
+  }
+}

@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KaiOS Phone Simulator</title>
+    
+    <!-- PWA Settings -->
+    <meta name="theme-color" content="#1a202c">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
+
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; padding: 1rem; background-color: #1a202c;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex; align-items: center; justify-content: center; min-height: 100vh;
+        }
+        .main-container {
+            display: flex; flex-direction: column; gap: 2rem; align-items: flex-start;
+        }
+        @media (min-width: 1024px) { .main-container { flex-direction: row; } }
+
+        /* --- PHONE CHASSIS --- */
+        .phone-body {
+            background: linear-gradient(145deg, #2d3748, #1a202c);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+            padding: 1.5rem; width: 320px; user-select: none;
+        }
+        .screen-bezel {
+            background: linear-gradient(145deg, #1a202c, #2d3748);
+            border-radius: 8px; box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+            padding: 0.75rem; margin-bottom: 1.5rem;
+        }
+        .screen-content {
+            width: 240px; height: 320px; overflow: hidden; position: relative;
+            background: #000; border: 1px solid #4a5568;
+        }
+        #testFrame {
+            width: 100%; height: 100%; border: 0; background: #fff; display: none;
+        }
+        .test-content {
+            padding: 15px; font-size: 12px; line-height: 1.5; color: #ccc;
+            background: #1a1a1a; height: 100%; display: flex; flex-direction: column;
+            justify-content: center; text-align: center;
+        }
+
+        /* --- BUTTONS --- */
+        .phone-button {
+            transition: all 0.1s ease; cursor: pointer; border: none; font-family: inherit;
+            outline: none; -webkit-tap-highlight-color: transparent;
+        }
+        .pressed-effect {
+            transform: scale(0.95) !important;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.5) !important;
+            background-color: #cbd5e0 !important; color: #000 !important;
+        }
+        .soft-keys { display: flex; justify-content: space-between; margin-bottom: 1rem; }
+        .soft-key-button {
+            background-color: #4b5563; color: white; padding: 0.5rem 1rem;
+            border-radius: 0.25rem; font-size: 0.875rem; width: 80px;
+        }
+        .dpad-container { display: flex; justify-content: center; margin-bottom: 1.5rem; }
+        .dpad { position: relative; width: 120px; height: 120px; margin: 0 auto; }
+        .dpad-button {
+            position: absolute; background: linear-gradient(145deg, #4a5568, #2d3748);
+            border: 2px solid #1a202c; color: white; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 10;
+        }
+        .dpad-center { width: 50px; height: 50px; border-radius: 50%; top: 35px; left: 35px; background: linear-gradient(145deg, #48bb78, #38a169) !important; font-size: 12px; }
+        .dpad-up { width: 40px; height: 30px; border-radius: 10px 10px 5px 5px; top: 0px; left: 40px; font-size: 10px; }
+        .dpad-down { width: 40px; height: 30px; border-radius: 5px 5px 10px 10px; bottom: 0px; left: 40px; font-size: 10px; }
+        .dpad-left { width: 30px; height: 40px; border-radius: 10px 5px 5px 10px; top: 40px; left: 0px; font-size: 10px; }
+        .dpad-right { width: 30px; height: 40px; border-radius: 5px 10px 10px 5px; top: 40px; right: 0px; font-size: 10px; }
+        
+        .call-controls { display: flex; justify-content: space-between; margin-bottom: 1rem; }
+        .call-button, .end-call-button {
+            color: white; padding: 0.75rem; border-radius: 50%; font-size: 1.25rem;
+            width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;
+        }
+        .call-button { background-color: #059669; }
+        .end-call-button { background-color: #dc2626; }
+
+        .button-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 1rem; }
+        .number-button {
+            background-color: #374151; color: white; padding: 0.75rem; border-radius: 0.25rem;
+            font-size: 1.125rem; font-family: monospace; text-align: center; line-height: 1.2;
+        }
+        .number-button .small-text { font-size: 0.6rem; display: block; color: #9ca3af; }
+        .back-button-container { display: flex; justify-content: center; }
+        .back-button { background-color: #4b5563; color: white; padding: 0.5rem 1.5rem; border-radius: 0.25rem; }
+
+        /* --- CONTROL PANEL --- */
+        .control-panel {
+            background: white; border-radius: 0.5rem; padding: 1.5rem; width: 320px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); color: #1f2937;
+        }
+        .control-panel h2 {
+            font-size: 1.25rem; font-weight: bold; margin: 0 0 1rem 0;
+            border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem;
+        }
+        .form-section { margin-bottom: 1.5rem; }
+        .form-label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; }
+        
+        .file-input-container { position: relative; overflow: hidden; display: inline-block; width: 100%; }
+        .file-input-container input[type=file] { position: absolute; left: -9999px; }
+        .file-button {
+            width: 100%; background-color: #2563eb; color: white; padding: 0.5rem 1rem;
+            border-radius: 0.25rem; border: none; cursor: pointer;
+        }
+        .file-button:hover { background-color: #1d4ed8; }
+
+        .url-input-container { display: flex; }
+        .url-input {
+            flex: 1; padding: 0.5rem; border: 1px solid #d1d5db;
+            border-radius: 0.25rem 0 0 0.25rem; font-size: 1rem;
+        }
+        .load-url-button {
+            background-color: #059669; color: white; padding: 0.5rem 1rem;
+            border: none; border-radius: 0 0.25rem 0.25rem 0; cursor: pointer;
+        }
+        .clear-button {
+            width: 100%; background-color: #4b5563; color: white; padding: 0.5rem;
+            border: none; border-radius: 0.25rem; cursor: pointer;
+        }
+        .key-log {
+            background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 0.25rem;
+            padding: 0.75rem; height: 100px; overflow-y: auto; font-family: monospace; font-size: 0.8rem;
+        }
+        .key-display {
+            position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.8);
+            color: white; padding: 0.5rem 0.75rem; border-radius: 0.25rem;
+            font-family: monospace; opacity: 0; transition: opacity 0.3s ease; z-index: 1000;
+        }
+        .key-display.show { opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <div id="keyDisplay" class="key-display">Key: <span id="keyCode"></span></div>
+
+    <div class="main-container">
+        <div class="phone-body">
+            <div class="screen-bezel">
+                <div class="screen-content">
+                    <iframe id="testFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                    <div id="defaultContent" class="test-content">
+                        <h3>KaiOS Simulator</h3>
+                        <p>Load HTML file or URL to begin.</p>
+                        <p style="color: #666; font-size: 10px; margin-top: 20px;">Supports .html files and localhost</p>
+                    </div>
+                </div>
+            </div>
+            <div class="soft-keys">
+                <button class="phone-button soft-key-button" data-key="SoftLeft">Menu</button>
+                <button class="phone-button soft-key-button" data-key="SoftRight">Options</button>
+            </div>
+            <div class="dpad-container">
+                <div class="dpad">
+                    <button class="phone-button dpad-button dpad-up" data-key="ArrowUp" title="Up">↑</button>
+                    <button class="phone-button dpad-button dpad-down" data-key="ArrowDown" title="Down">↓</button>
+                    <button class="phone-button dpad-button dpad-left" data-key="ArrowLeft" title="Left">←</button>
+                    <button class="phone-button dpad-button dpad-right" data-key="ArrowRight" title="Right">→</button>
+                    <button class="phone-button dpad-button dpad-center" data-key="Enter" title="OK">OK</button>
+                </div>
+            </div>
+            <div class="call-controls">
+                <button class="phone-button call-button" data-key="Call">📞</button>
+                <button class="phone-button end-call-button" data-key="EndCall">📵</button>
+            </div>
+            <div class="button-grid">
+                <button class="phone-button number-button" data-key="1">1</button>
+                <button class="phone-button number-button" data-key="2">2<span class="small-text">ABC</span></button>
+                <button class="phone-button number-button" data-key="3">3<span class="small-text">DEF</span></button>
+                <button class="phone-button number-button" data-key="4">4<span class="small-text">GHI</span></button>
+                <button class="phone-button number-button" data-key="5">5<span class="small-text">JKL</span></button>
+                <button class="phone-button number-button" data-key="6">6<span class="small-text">MNO</span></button>
+                <button class="phone-button number-button" data-key="7">7<span class="small-text">PQRS</span></button>
+                <button class="phone-button number-button" data-key="8">8<span class="small-text">TUV</span></button>
+                <button class="phone-button number-button" data-key="9">9<span class="small-text">WXYZ</span></button>
+                <button class="phone-button number-button" data-key="*">*</button>
+                <button class="phone-button number-button" data-key="0">0<span class="small-text">+</span></button>
+                <button class="phone-button number-button" data-key="#">#</button>
+            </div>
+            <div class="back-button-container">
+                <button class="phone-button back-button" data-key="Backspace">← Back</button>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <h2>Controls</h2>
+            <div class="form-section">
+                <label class="form-label">Load HTML File</label>
+                <div class="file-input-container">
+                    <input type="file" id="fileInput" accept=".html,.htm">
+                    <button id="fileButton" class="file-button">Choose HTML File</button>
+                </div>
+                <p style="font-size: 0.75rem; color: #666; margin-top: 5px;">Select a local .html file</p>
+            </div>
+            <div class="form-section">
+                <label class="form-label">Load URL</label>
+                <div class="url-input-container">
+                    <input type="text" id="urlInput" placeholder="localhost:5500" class="url-input">
+                    <button id="loadUrl" class="load-url-button">Load</button>
+                </div>
+            </div>
+            <div class="form-section">
+                <button id="clearContent" class="clear-button">Clear Screen</button>
+            </div>
+            <div class="form-section">
+                <label class="form-label">Key Log</label>
+                <div id="keyLog" class="key-log"><div style="color: #999;">Events appear here...</div></div>
+            </div>
+        </div>
+    </div>
+<script src="cordova.js"></script>
+    <script>
+        const testFrame = document.getElementById('testFrame');
+        const defaultContent = document.getElementById('defaultContent');
+        const fileInput = document.getElementById('fileInput');
+        const fileButton = document.getElementById('fileButton');
+        const urlInput = document.getElementById('urlInput');
+        const loadUrlBtn = document.getElementById('loadUrl');
+        const clearBtn = document.getElementById('clearContent');
+        const keyLog = document.getElementById('keyLog');
+        const keyDisplay = document.getElementById('keyDisplay');
+        const keyCode = document.getElementById('keyCode');
+
+        // Navigation Debounce
+        let lastKeyTime = 0;
+        const KEY_DELAY = 300; 
+
+        // --- FILE UPLOAD ---
+        fileButton.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && (file.type === 'text/html' || file.name.endsWith('.html') || file.name.endsWith('.htm'))) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    defaultContent.style.display = 'none';
+                    testFrame.style.display = 'block';
+                    testFrame.removeAttribute('src');
+                    testFrame.srcdoc = e.target.result;
+                    logSystemEvent("Loaded File: " + file.name);
+                    fileButton.blur(); 
+                };
+                reader.readAsText(file);
+            } else {
+                alert('Please select a valid HTML file.');
+            }
+        });
+
+        // --- URL LOAD ---
+        function triggerLoadUrl() {
+            let url = urlInput.value.trim();
+            if (!url) return;
+
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                if (url.includes('localhost') || url.includes(':') || url.match(/\d+\.\d+/)) {
+                    url = 'http://' + url;
+                } else {
+                    url = 'https://' + url;
+                }
+            }
+
+            defaultContent.style.display = 'none';
+            testFrame.style.display = 'block';
+            testFrame.removeAttribute('srcdoc');
+            testFrame.src = url;
+            
+            logSystemEvent("Loading URL: " + url);
+            
+            urlInput.blur(); 
+            loadUrlBtn.blur();
+        }
+
+        loadUrlBtn.addEventListener('click', triggerLoadUrl);
+
+        urlInput.addEventListener('keydown', (e) => {
+            if(e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                triggerLoadUrl();
+            }
+        });
+
+        // --- CLEAR ---
+        clearBtn.addEventListener('click', () => {
+            testFrame.src = "";
+            testFrame.srcdoc = "";
+            testFrame.style.display = 'none';
+            defaultContent.style.display = 'flex';
+            logSystemEvent("Screen Cleared");
+            clearBtn.blur();
+        });
+
+        // --- BUTTON HANDLING ---
+        document.querySelectorAll('.phone-button').forEach(button => {
+            button.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                handleButtonPress(button);
+            }, { passive: false });
+
+            button.addEventListener('mousedown', (e) => {
+                if(e.button === 0) handleButtonPress(button);
+            });
+
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+
+            ['touchend', 'mouseup', 'mouseleave'].forEach(evt => {
+                button.addEventListener(evt, () => button.classList.remove('pressed-effect'));
+            });
+        });
+
+        function handleButtonPress(btn) {
+            const now = Date.now();
+            if (now - lastKeyTime < KEY_DELAY) return;
+            lastKeyTime = now;
+
+            btn.classList.add('pressed-effect');
+            const key = btn.dataset.key;
+            simulateKeyPress(key);
+        }
+
+        // --- PHYSICAL KEYBOARD ---
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                return;
+            }
+
+            const now = Date.now();
+            if (now - lastKeyTime < 150) return;
+            lastKeyTime = now;
+
+            const key = e.key;
+            const btn = document.querySelector(`[data-key="${key}"]`);
+            
+            if (btn) {
+                btn.classList.add('pressed-effect');
+                simulateKeyPress(key);
+                setTimeout(() => btn.classList.remove('pressed-effect'), 150);
+            }
+        });
+
+        function simulateKeyPress(key) {
+            keyCode.textContent = key;
+            keyDisplay.classList.add('show');
+            setTimeout(() => keyDisplay.classList.remove('show'), 800);
+            logKeyEvent(key);
+
+            if (testFrame.contentWindow) {
+                try {
+                    const kDown = new KeyboardEvent('keydown', { key: key, code: key, bubbles: true, cancelable: true, view: testFrame.contentWindow });
+                    testFrame.contentWindow.document.dispatchEvent(kDown);
+
+                    setTimeout(() => {
+                        const kUp = new KeyboardEvent('keyup', { key: key, code: key, bubbles: true, cancelable: true, view: testFrame.contentWindow });
+                        testFrame.contentWindow.document.dispatchEvent(kUp);
+                    }, 50);
+                } catch (e) {
+                    console.error("CORS Error:", e);
+                }
+            }
+        }
+
+        function logKeyEvent(key) {
+            const time = new Date().toLocaleTimeString().split(' ')[0];
+            const div = document.createElement('div');
+            div.innerHTML = `<span style="color:#666">[${time}]</span> Key: <b>${key}</b>`;
+            keyLog.appendChild(div);
+            keyLog.scrollTop = keyLog.scrollHeight;
+        }
+
+        function logSystemEvent(msg) {
+            const div = document.createElement('div');
+            div.style.color = 'blue';
+            div.textContent = `> ${msg}`;
+            keyLog.appendChild(div);
+            keyLog.scrollTop = keyLog.scrollHeight;
+        }
+
+        // --- SERVICE WORKER REGISTRATION (FOR PWA) ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker Registered'))
+                    .catch(err => console.log('Service Worker Failed', err));
+            });
+        }
+    </script>
+</body>
+</html>
